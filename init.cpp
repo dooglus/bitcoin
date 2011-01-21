@@ -196,7 +196,7 @@ bool AppInit2(int argc, char* argv[])
 #endif
 
         strUsage += string() +
-            "  -?               \t\t  " + _("This help message\n");
+            "  --help or -?     \t\t  " + _("Show this help message\n");
 
 #if defined(__WXMSW__) && defined(GUI)
         // Tabs make the columns line up in the message box
