@@ -745,6 +745,7 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CW
     if (vecSend.empty() || nValue < 0)
         return false;
 
+	printf("CreateTransaction: nValue = %lld\n", nValue);
     wtxNew.pwallet = this;
 
     CRITICAL_BLOCK(cs_main)
@@ -754,8 +755,10 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CW
         CRITICAL_BLOCK(cs_mapWallet)
         {
             nFeeRet = nTransactionFee;
+			printf("entering loop\n");
             loop
             {
+				printf("top of loop\n");
                 wtxNew.vin.clear();
                 wtxNew.vout.clear();
                 wtxNew.fFromMe = true;
@@ -769,12 +772,22 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CW
                 // Choose coins to use
                 set<pair<const CWalletTx*,unsigned int> > setCoins;
                 int64 nValueIn = 0;
+				printf("selecting coins to get value %lld + fee %lld = total %lld\n", nValue, nFeeRet, nTotalValue);
                 if (!SelectCoins(nTotalValue, setCoins, nValueIn))
+				{
+					printf("select coins failed\n");
                     return false;
+				}
+				printf("finished selecting coins to get %lld - input is %lld\n", nTotalValue, nValueIn);
                 BOOST_FOREACH(PAIRTYPE(const CWalletTx*, unsigned int) pcoin, setCoins)
                 {
                     int64 nCredit = pcoin.first->vout[pcoin.second].nValue;
                     dPriority += (double)nCredit * pcoin.first->GetDepthInMainChain();
+					printf("credit %lld\n", nCredit);
+					printf("age %d\n", pcoin.first->GetDepthInMainChain());
+					printf("credit %lld age %d -> %lf %lf %d\n", nCredit, pcoin.first->GetDepthInMainChain(), (double)nCredit * pcoin.first->GetDepthInMainChain(), dPriority, 314);
+					printf("dPriority %lf M\n", dPriority / 1e6);
+					printf("\n");
                 }
 
                 // Fill a vout back to self with any change
@@ -821,10 +834,12 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CW
                 if (nBytes >= MAX_BLOCK_SIZE_GEN/5)
                     return false;
                 dPriority /= nBytes;
+				printf("size %d bytes -> %lf M\n", nBytes, dPriority/1e6);
 
                 // Check that enough fee is included
                 int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
                 bool fAllowFree = CTransaction::AllowFree(dPriority);
+				printf("allowfree = %d\n", fAllowFree);
                 int64 nMinFee = wtxNew.GetMinFee(1, fAllowFree);
                 if (nFeeRet < max(nPayFee, nMinFee))
                 {

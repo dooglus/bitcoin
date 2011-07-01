@@ -520,6 +520,7 @@ public:
     {
         // Large (in bytes) low-priority (new, small-coin) transactions
         // need a fee.
+        printf("%.2f%% OK to be free transaction\n", dPriority * 100 / (COIN * 144 / 250));
         return dPriority > COIN * 144 / 250;
     }
 
