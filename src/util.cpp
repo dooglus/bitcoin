@@ -346,11 +346,6 @@ string FormatMoney(int64 n, bool fPlus)
     if (nTrim)
         str.erase(str.size()-nTrim, nTrim);
 
-    // Insert thousands-separators:
-    size_t point = str.find(".");
-    for (int i = (str.size()-point)+3; i < str.size(); i += 4)
-        if (isdigit(str[str.size() - i - 1]))
-            str.insert(str.size() - i, 1, ',');
     if (n < 0)
         str.insert((unsigned int)0, 1, '-');
     else if (fPlus && n > 0)
@@ -373,8 +368,6 @@ bool ParseMoney(const char* pszIn, int64& nRet)
         p++;
     for (; *p; p++)
     {
-        if (*p == ',' && p > pszIn && isdigit(p[-1]) && isdigit(p[1]) && isdigit(p[2]) && isdigit(p[3]) && !isdigit(p[4]))
-            continue;
         if (*p == '.')
         {
             p++;
@@ -767,8 +760,8 @@ string GetPidFile()
 
 void CreatePidFile(string pidFile, pid_t pid)
 {
-    FILE* file;
-    if (file = fopen(pidFile.c_str(), "w"))
+    FILE* file = fopen(pidFile.c_str(), "w");
+    if (file)
     {
         fprintf(file, "%d\n", pid);
         fclose(file);
@@ -797,7 +790,9 @@ void ShrinkDebugFile()
         fseek(file, -sizeof(pch), SEEK_END);
         int nBytes = fread(pch, 1, sizeof(pch), file);
         fclose(file);
-        if (file = fopen(strFile.c_str(), "w"))
+
+        file = fopen(strFile.c_str(), "w");
+        if (file)
         {
             fwrite(pch, 1, nBytes, file);
             fclose(file);

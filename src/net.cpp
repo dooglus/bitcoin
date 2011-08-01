@@ -9,6 +9,15 @@
 #include "init.h"
 #include "strlcpy.h"
 
+#ifdef __WXMSW__
+#include <string.h>
+// This file can be downloaded as a part of the Windows Platform SDK
+// and is required for Bitcoin binaries to work properly on versions
+// of Windows before XP.  If you are doing builds of Bitcoin for
+// public release, you should uncomment this line.
+//#include <WSPiApi.h>
+#endif
+
 #ifdef USE_UPNP
 #include <miniupnpc/miniwget.h>
 #include <miniupnpc/miniupnpc.h>
@@ -148,7 +157,7 @@ bool ConnectSocket(const CAddress& addrConnect, SOCKET& hSocketRet, int nTimeout
             }
             if (nRet != 0)
             {
-                printf("connect() failed after select(): %i\n",nRet);
+                printf("connect() failed after select(): %s\n",strerror(nRet));
                 closesocket(hSocket);
                 return false;
             }
@@ -431,7 +440,7 @@ void ThreadGetMyExternalIP(void* parg)
 
 
 
-bool AddAddress(CAddress addr, int64 nTimePenalty)
+bool AddAddress(CAddress addr, int64 nTimePenalty, CAddrDB *pAddrDB)
 {
     if (!addr.IsRoutable())
         return false;
@@ -446,7 +455,10 @@ bool AddAddress(CAddress addr, int64 nTimePenalty)
             // New address
             printf("AddAddress(%s)\n", addr.ToString().c_str());
             mapAddresses.insert(make_pair(addr.GetKey(), addr));
-            CAddrDB().WriteAddress(addr);
+            if (pAddrDB)
+                pAddrDB->WriteAddress(addr);
+            else
+                CAddrDB().WriteAddress(addr);
             return true;
         }
         else
@@ -468,7 +480,12 @@ bool AddAddress(CAddress addr, int64 nTimePenalty)
                 fUpdated = true;
             }
             if (fUpdated)
-                CAddrDB().WriteAddress(addrFound);
+            {
+                if (pAddrDB)
+                    pAddrDB->WriteAddress(addrFound);
+                else
+                    CAddrDB().WriteAddress(addrFound);
+            }
         }
     }
     return false;
@@ -822,7 +839,7 @@ void ThreadSocketHandler2(void* parg)
         {
             BOOST_FOREACH(CNode* pnode, vNodes)
             {
-                if (pnode->hSocket == INVALID_SOCKET || pnode->hSocket < 0)
+                if (pnode->hSocket == INVALID_SOCKET)
                     continue;
                 FD_SET(pnode->hSocket, &fdsetRecv);
                 FD_SET(pnode->hSocket, &fdsetError);
@@ -915,7 +932,7 @@ void ThreadSocketHandler2(void* parg)
                     CDataStream& vRecv = pnode->vRecv;
                     unsigned int nPos = vRecv.size();
 
-                    if (nPos > 1000*GetArg("-maxreceivebuffer", 10*1000)) {
+                    if (nPos > ReceiveBufferSize()) {
                         if (!pnode->fDisconnect)
                             printf("socket recv flood control disconnect (%d bytes)\n", vRecv.size());
                         pnode->CloseSocketDisconnect();
@@ -980,7 +997,7 @@ void ThreadSocketHandler2(void* parg)
                                 pnode->CloseSocketDisconnect();
                             }
                         }
-                        if (vSend.size() > 1000*GetArg("-maxsendbuffer", 10*1000)) {
+                        if (vSend.size() > SendBufferSize()) {
                             if (!pnode->fDisconnect)
                                 printf("socket send flood control disconnect (%d bytes)\n", vSend.size());
                             pnode->CloseSocketDisconnect();
@@ -1146,22 +1163,29 @@ void DNSAddressSeed()
 {
     int found = 0;
 
-    printf("Loading addresses from DNS seeds (could take a while)\n");
+    if (!fTestNet)
+    {
+        printf("Loading addresses from DNS seeds (could take a while)\n");
+        CAddrDB addrDB;
+        addrDB.TxnBegin();
 
-    for (int seed_idx = 0; seed_idx < ARRAYLEN(strDNSSeed); seed_idx++) {
-        vector<CAddress> vaddr;
-        if (Lookup(strDNSSeed[seed_idx], vaddr, NODE_NETWORK, -1, true))
-        {
-            BOOST_FOREACH (CAddress& addr, vaddr)
+        for (int seed_idx = 0; seed_idx < ARRAYLEN(strDNSSeed); seed_idx++) {
+            vector<CAddress> vaddr;
+            if (Lookup(strDNSSeed[seed_idx], vaddr, NODE_NETWORK, -1, true))
             {
-                if (addr.GetByte(3) != 127)
+                BOOST_FOREACH (CAddress& addr, vaddr)
                 {
-                    addr.nTime = 0;
-                    AddAddress(addr);
-                    found++;
+                    if (addr.GetByte(3) != 127)
+                    {
+                        addr.nTime = 0;
+                        AddAddress(addr, 0, &addrDB);
+                        found++;
+                    }
                 }
             }
         }
+
+        addrDB.TxnCommit();  // Save addresses (it's ok if this fails)
     }
 
     printf("%d addresses found from DNS seeds\n", found);
@@ -1688,7 +1712,7 @@ void StartNode(void* parg)
         printf("Error: CreateThread(ThreadIRCSeed) failed\n");
 
     // Send and receive from sockets, accept connections
-    pthread_t hThreadSocketHandler = CreateThread(ThreadSocketHandler, NULL, true);
+    CreateThread(ThreadSocketHandler, NULL, true);
 
     // Initiate outbound connections
     if (!CreateThread(ThreadOpenConnections, NULL))
