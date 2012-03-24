@@ -81,7 +81,13 @@ void CoinControlPage::UpdateTable() {
 
   table->setRowCount(0);
 
+  bool first = true;
   BOOST_FOREACH(set<string> addresses, nonZeroGroupings) {
+    if (first)
+      first = false;
+    else
+      table->insertRow(0);
+
     vector<string> sortedAddresses(addresses.begin(), addresses.end());
     sort(sortedAddresses.begin(), sortedAddresses.end(), boost::lambda::var(balances)[boost::lambda::_1] < boost::lambda::var(balances)[boost::lambda::_2]);
 
@@ -106,6 +112,5 @@ void CoinControlPage::UpdateTable() {
         table->setItem(0, 3, new QTableWidgetItem(QString::fromStdString("-")));
       }
     }
-    table->insertRow(0);
   }
 }
