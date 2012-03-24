@@ -10,10 +10,52 @@
 using namespace std;
 
 
+static bool IsDisjoint(const set<string> &set1, const set<string> &set2)
+{
+  if (set1.empty() || set2.empty())
+    return true;
+
+  typename set<string>::const_iterator it1 = set1.begin(), it1End = set1.end();
+  typename set<string>::const_iterator it2 = set2.begin(), it2End = set2.end();
+
+  if (*it1 > *set2.rbegin() || *it2 > *set1.rbegin())
+    return true;
+
+  while(it1 != it1End && it2 != it2End) {
+    if (*it1 == *it2)
+      return false;
+    if (*it1 < *it2)
+      it1++;
+    else
+      it2++;
+  }
+
+  return true;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 //
 // mapWallet
 //
+
+void CWallet::setSendFromAddressRestriction(string addresses)
+{
+  boost::trim(addresses);
+  if (addresses.empty())
+      this->sendFromAddressRestriction.clear();
+  else
+      boost::split(sendFromAddressRestriction, addresses, boost::is_any_of(";,"));
+}
+
+void CWallet::setSendFromAddressRestriction(set<string> addresses)
+{
+  sendFromAddressRestriction = addresses;
+}
+
+void CWallet::clearSendFromAddressRestriction()
+{
+  sendFromAddressRestriction.clear();
+}
 
 std::vector<unsigned char> CWallet::GenerateNewKey()
 {
@@ -887,6 +929,9 @@ bool CWallet::SelectCoinsMinConf(int64 nTargetValue, int nConfMine, int nConfThe
                 if (n <= 0)
                     continue;
 
+                if (!this->sendFromAddressRestriction.empty() && !this->sendFromAddressRestriction.count(((CWalletTx *)pcoin)->GetAddressOfTxOut(i)))
+                    continue;
+
                 pair<int64,pair<const CWalletTx*,unsigned int> > coin = make_pair(n,make_pair(pcoin,i));
 
                 if (n == nTargetValue)
@@ -1481,6 +1526,104 @@ int64 CWallet::GetOldestKeyPoolTime()
         return GetTime();
     ReturnKey(nIndex);
     return keypool.nTime;
+}
+
+std::map<std::string, int64> CWallet::GetAddressBalances()
+{
+  map<string, int64> balances;
+
+  CRITICAL_BLOCK(cs_wallet)
+  {
+    BOOST_FOREACH(PAIRTYPE(uint256, CWalletTx) walletEntry, mapWallet) {
+      CWalletTx *pcoin = &walletEntry.second;
+
+      if (!pcoin->IsFinal() || !pcoin->IsConfirmed())
+        continue;
+
+      if (pcoin->IsCoinBase() && pcoin->GetBlocksToMaturity() > 0)
+        continue;
+
+      int nDepth = pcoin->GetDepthInMainChain();
+      if (nDepth < (pcoin->IsFromMe() ? 0 : 1))
+        continue;
+
+      for (int i = 0; i < pcoin->vout.size(); i++)
+      {
+        if (!IsMine(pcoin->vout[i]))
+          continue;
+
+        int64 n = pcoin->IsSpent(i) ? 0 : pcoin->vout[i].nValue;
+
+        string addr = pcoin->GetAddressOfTxOut(i);
+        if (!balances.count(addr))  balances[addr] = 0;
+        balances[addr] += n;
+      }
+    }
+  }
+
+  return balances;
+}
+
+set< set<string> > CWallet::GetAddressGroupings()
+{
+  set< set<string> > groupings;
+  set<string> grouping;
+
+  BOOST_FOREACH(PAIRTYPE(uint256, CWalletTx) walletEntry, mapWallet) {
+    CWalletTx *pcoin = &walletEntry.second;
+
+    if (!pcoin->IsFinal() || !pcoin->IsConfirmed())
+      continue;
+
+    if (pcoin->IsCoinBase() && pcoin->GetBlocksToMaturity() > 0)
+      continue;
+
+    int nDepth = pcoin->GetDepthInMainChain();
+    if (nDepth < (pcoin->IsFromMe() ? 0 : 1))
+      continue;
+
+    if (pcoin->vin.size() > 0 && IsMine(pcoin->vin[0])) {
+      // group all input addresses with each other
+      BOOST_FOREACH(CTxIn txin, pcoin->vin)
+        grouping.insert(mapWallet[txin.prevout.hash].GetAddressOfTxOut(txin.prevout.n));
+
+      // group change with input addresses
+      BOOST_FOREACH(CTxOut txout, pcoin->vout)
+        if (IsChange(txout)) {
+          CWalletTx tx = mapWallet[pcoin->vin[0].prevout.hash];
+          string addr = tx.GetAddressOfTxOut(pcoin->vin[0].prevout.n);
+          CBitcoinAddress txoutAddr;
+          ExtractAddress(txout.scriptPubKey, txoutAddr);
+          grouping.insert(txoutAddr.ToString());
+        }
+      groupings.insert(grouping);
+      grouping.clear();
+    }
+
+    // group lone addrs by themselves
+    for (int i = 0; i < pcoin->vout.size(); i++)
+      if (IsMine(pcoin->vout[i])) {
+        grouping.insert(pcoin->GetAddressOfTxOut(i));
+        groupings.insert(grouping);
+        grouping.clear();
+      }
+  }
+
+  set< set<string> > uniqueGroupings;
+  BOOST_FOREACH(set<string> grouping, groupings) {
+    set<string> merged = grouping;
+    for (set< set<string> >::iterator it = uniqueGroupings.begin(); it != uniqueGroupings.end(); ) {
+      if (IsDisjoint(*it, grouping))
+          ++it;
+      else {
+        merged.insert(it->begin(), it->end());
+        uniqueGroupings.erase(it++); // erase() invalidates the iterator it is passed.  but 'it++' is only a copy of 'it' so that's ok
+      }
+    }
+    uniqueGroupings.insert(merged);
+  }
+
+  return uniqueGroupings;
 }
 
 vector<unsigned char> CReserveKey::GetReservedKey()
