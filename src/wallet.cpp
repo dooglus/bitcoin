@@ -10,6 +10,7 @@
 using namespace std;
 
 
+// adapted from code at http://stackoverflow.com/a/1964252/1253362
 static bool IsDisjoint(const set<string> &set1, const set<string> &set2)
 {
   if (set1.empty() || set2.empty())
