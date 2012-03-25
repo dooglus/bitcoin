@@ -10,30 +10,6 @@
 using namespace std;
 
 
-// adapted from code at http://stackoverflow.com/a/1964252/1253362
-static bool IsDisjoint(const set<string> &set1, const set<string> &set2)
-{
-  if (set1.empty() || set2.empty())
-    return true;
-
-  set<string>::const_iterator it1 = set1.begin(), it1End = set1.end();
-  set<string>::const_iterator it2 = set2.begin(), it2End = set2.end();
-
-  if (*it1 > *set2.rbegin() || *it2 > *set1.rbegin())
-    return true;
-
-  while(it1 != it1End && it2 != it2End) {
-    if (*it1 == *it2)
-      return false;
-    if (*it1 < *it2)
-      it1++;
-    else
-      it2++;
-  }
-
-  return true;
-}
-
 //////////////////////////////////////////////////////////////////////////////
 //
 // mapWallet
@@ -1610,21 +1586,37 @@ set< set<string> > CWallet::GetAddressGroupings()
       }
   }
 
-  set< set<string> > uniqueGroupings;
+  set< set<string>* > uniqueGroupings; // a set of pointers to groups of addresses
+  map< string, set<string>* > setmap;  // map addresses to the unique group containing it
   BOOST_FOREACH(set<string> grouping, groupings) {
-    set<string> merged = grouping;
-    for (set< set<string> >::iterator it = uniqueGroupings.begin(); it != uniqueGroupings.end(); ) {
-      if (IsDisjoint(*it, grouping))
-          ++it;
-      else {
-        merged.insert(it->begin(), it->end());
-        uniqueGroupings.erase(it++); // erase() invalidates the iterator it is passed.  but 'it++' is only a copy of 'it' so that's ok
-      }
+	// make a set of all the groups hit by this new group
+	set< set<string>* > hits;
+	map< string, set<string>* >::iterator it;
+	BOOST_FOREACH(string address, grouping)
+	  if ((it = setmap.find(address)) != setmap.end())
+		hits.insert((*it).second);
+
+	// merge all hit groups into a new single group and delete old groups
+	set<string>* merged = new set<string>(grouping);
+	BOOST_FOREACH(set<string>* hit, hits) {
+	  merged->insert(hit->begin(), hit->end());
+	  uniqueGroupings.erase(hit);
+	  delete hit;
     }
     uniqueGroupings.insert(merged);
+
+	// update setmap
+	BOOST_FOREACH(string element, *merged)
+	  setmap[element] = merged;
   }
 
-  return uniqueGroupings;
+  set< set<string> > ret;
+  BOOST_FOREACH(set<string>* uniqueGrouping, uniqueGroupings) {
+	ret.insert(*uniqueGrouping);
+	delete uniqueGrouping;
+  }
+
+  return ret;
 }
 
 vector<unsigned char> CReserveKey::GetReservedKey()
