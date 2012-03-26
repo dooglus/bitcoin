@@ -548,7 +548,8 @@ public:
         return true;
     }
 
-    std::string GetAddressOfTxOut(int n) {
+    std::string GetAddressOfTxOut(int n)
+    {
         CBitcoinAddress addr;
         ExtractAddress(vout[n].scriptPubKey, addr);
         return addr.ToString();

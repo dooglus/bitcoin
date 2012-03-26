@@ -246,5 +246,5 @@ bool OptionsModel::getDisplayAddresses()
 
 bool OptionsModel::getCoinControlFeatures()
 {
-  return bCoinControlFeatures;
+    return bCoinControlFeatures;
 }

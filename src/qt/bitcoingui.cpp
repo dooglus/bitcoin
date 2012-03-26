@@ -702,9 +702,10 @@ void BitcoinGUI::gotoReceiveCoinsPage()
 
 void BitcoinGUI::gotoSendCoinsPage()
 {
-    if (!coinControlPage->selectedAddresses().empty()) {
-      sendCoinsPage->setSendFromAddress(coinControlPage->selectedAddresses());
-      coinControlPage->clearSelection();
+    if (!coinControlPage->selectedAddresses().empty())
+    {
+        sendCoinsPage->setSendFromAddress(coinControlPage->selectedAddresses());
+        coinControlPage->clearSelection();
     }
 
     show();  // TODOcoderrr: still need this?

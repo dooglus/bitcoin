@@ -38,7 +38,7 @@ SendCoinsDialog::SendCoinsDialog(QWidget *parent) :
 
 void SendCoinsDialog::setSendFromAddress(std::string address)
 {
-  ui->sendFrom->setText(QString::fromStdString(address));
+    ui->sendFrom->setText(QString::fromStdString(address));
 }
 
 void SendCoinsDialog::setModel(WalletModel *model)
@@ -71,7 +71,8 @@ void SendCoinsDialog::toggleSendFrom(bool show)
 {
     ui->labelSendFrom->setVisible(show);
     ui->sendFrom->setVisible(show);
-    if (!show)  ui->sendFrom->clear();
+    if (!show)
+        ui->sendFrom->clear();
 }
 
 void SendCoinsDialog::on_sendButton_clicked()

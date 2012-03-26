@@ -583,7 +583,8 @@ Value sendtoaddress(const Array& params, bool fHelp)
             "<amount> is a real and is rounded to the nearest 0.00000001" + crypt_usage);
 
     strAddress = splitAddresses[0];
-    if (splitAddresses.size() == 2)  pwalletMain->setSendFromAddressRestriction(splitAddresses[1]);
+    if (splitAddresses.size() == 2)
+        pwalletMain->setSendFromAddressRestriction(splitAddresses[1]);
 
     CBitcoinAddress address(strAddress);
     if (!address.IsValid())
@@ -592,23 +593,24 @@ Value sendtoaddress(const Array& params, bool fHelp)
     if (pwalletMain->IsLocked())
         throw JSONRPCError(-13, "Error: Please enter the wallet passphrase with walletpassphrase first.");
 
-    try {
-      // Amount
-      int64 nAmount = AmountFromValue(params[1]);
-      // Wallet comments
-      CWalletTx wtx;
-      if (params.size() > 2 && params[2].type() != null_type && !params[2].get_str().empty())
-          wtx.mapValue["comment"] = params[2].get_str();
-      if (params.size() > 3 && params[3].type() != null_type && !params[3].get_str().empty())
-          wtx.mapValue["to"]      = params[3].get_str();
+    try
+    {
+        // Amount
+        int64 nAmount = AmountFromValue(params[1]);
+        // Wallet comments
+        CWalletTx wtx;
+        if (params.size() > 2 && params[2].type() != null_type && !params[2].get_str().empty())
+            wtx.mapValue["comment"] = params[2].get_str();
+        if (params.size() > 3 && params[3].type() != null_type && !params[3].get_str().empty())
+            wtx.mapValue["to"]      = params[3].get_str();
 
-      string strError = pwalletMain->SendMoneyToBitcoinAddress(strAddress, nAmount, wtx);
-      if (strError != "")
-          throw JSONRPCError(-4, strError);
+        string strError = pwalletMain->SendMoneyToBitcoinAddress(strAddress, nAmount, wtx);
+        if (strError != "")
+            throw JSONRPCError(-4, strError);
 
-      pwalletMain->clearSendFromAddressRestriction();
+        pwalletMain->clearSendFromAddressRestriction();
 
-      return wtx.GetHash().GetHex();
+        return wtx.GetHash().GetHex();
     } catch (...) {
       pwalletMain->clearSendFromAddressRestriction();
       throw;
@@ -617,23 +619,27 @@ Value sendtoaddress(const Array& params, bool fHelp)
 
 Value listaddressgroupings(const Array& params, bool fHelp)
 {
-  if (fHelp)  throw runtime_error("listaddressgroupings");
-  Array jsonGroupings;
-  map<string, int64> balances = pwalletMain->GetAddressBalances();
-  BOOST_FOREACH(set<string> grouping, pwalletMain->GetAddressGroupings()) {
-    Array jsonGrouping;
-    BOOST_FOREACH(string address, grouping) {
-      Array addressInfo;
-      addressInfo.push_back(address);
-      addressInfo.push_back(ValueFromAmount(balances[address]));
-      CRITICAL_BLOCK(pwalletMain->cs_wallet)
-        if (pwalletMain->mapAddressBook.find(CBitcoinAddress(address)) != pwalletMain->mapAddressBook.end())
-          addressInfo.push_back(pwalletMain->mapAddressBook.find(CBitcoinAddress(address))->second);
-      jsonGrouping.push_back(addressInfo);
+    if (fHelp)
+        throw runtime_error("listaddressgroupings");
+
+    Array jsonGroupings;
+    map<string, int64> balances = pwalletMain->GetAddressBalances();
+    BOOST_FOREACH(set<string> grouping, pwalletMain->GetAddressGroupings())
+    {
+        Array jsonGrouping;
+        BOOST_FOREACH(string address, grouping)
+        {
+            Array addressInfo;
+            addressInfo.push_back(address);
+            addressInfo.push_back(ValueFromAmount(balances[address]));
+            CRITICAL_BLOCK(pwalletMain->cs_wallet)
+                if (pwalletMain->mapAddressBook.find(CBitcoinAddress(address)) != pwalletMain->mapAddressBook.end())
+                    addressInfo.push_back(pwalletMain->mapAddressBook.find(CBitcoinAddress(address))->second);
+            jsonGrouping.push_back(addressInfo);
+        }
+        jsonGroupings.push_back(jsonGrouping);
     }
-    jsonGroupings.push_back(jsonGrouping);
-  }
-  return jsonGroupings;
+    return jsonGroupings;
 }
 
 Value signmessage(const Array& params, bool fHelp)

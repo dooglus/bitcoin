@@ -242,7 +242,7 @@ bool WalletModel::changePassphrase(const SecureString &oldPass, const SecureStri
 
 void WalletModel::setSendFromAddressRestriction(std::string addresses)
 {
-  wallet->setSendFromAddressRestriction(addresses);
+    wallet->setSendFromAddressRestriction(addresses);
 }
 
 bool WalletModel::backupWallet(const QString &filename)
