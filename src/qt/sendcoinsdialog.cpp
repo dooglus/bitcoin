@@ -190,6 +190,7 @@ void SendCoinsDialog::clear()
 
     updateRemoveEnabled();
 
+    ui->sendFrom->clear();
     ui->sendButton->setDefault(true);
 }
 
