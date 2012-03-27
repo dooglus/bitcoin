@@ -32,7 +32,7 @@ CoinControlPage::CoinControlPage(QWidget *parent) :
     QHBoxLayout *hlayout = new QHBoxLayout(this);
 
     QStringList headers;
-    headers << "Address" << "Label" << "Balance" << "Balance Minus Tx Fee";
+    headers << "Address" << "Label" << "Balance" << "Group Balance";
     table = new QTableWidget(this);
     table->setColumnCount(4);
     table->setHorizontalHeaderLabels(headers);
@@ -97,8 +97,9 @@ void CoinControlPage::UpdateTable()
     table->setRowCount(0);
 
     bool first = true;
-    BOOST_FOREACH(PAIRTYPE(uint256, set<string>) grouping, nonZeroGroupings)
+    BOOST_FOREACH(PAIRTYPE(int64, set<string>) grouping, nonZeroGroupings)
     {
+        int64 group_balance = grouping.first;
         set<string> addresses = grouping.second;
         if (first)
             first = false;
@@ -108,9 +109,11 @@ void CoinControlPage::UpdateTable()
         vector<string> sortedAddresses(addresses.begin(), addresses.end());
         sort(sortedAddresses.begin(), sortedAddresses.end(), boost::lambda::var(balances)[boost::lambda::_1] < boost::lambda::var(balances)[boost::lambda::_2]);
 
+        int remaining = addresses.size();
         BOOST_FOREACH(string address, sortedAddresses)
         {
             int64 balance = balances[address];
+            remaining--;
 
             table->insertRow(0);
             table->setItem(0, 0, new QTableWidgetItem(QString::fromStdString(address)));
@@ -122,16 +125,11 @@ void CoinControlPage::UpdateTable()
             if (balance > 0)
             {
                 table->setItem(0, 2, new QTableWidgetItem(QString::fromStdString(strprintf("%"PRI64d".%08"PRI64d, balance/COIN, balance%COIN))));
-                if (balance-MIN_TX_FEE < 0)
-                    table->setItem(0, 3, new QTableWidgetItem(QString::fromStdString("less than 0")));
-                else
-                    table->setItem(0, 3, new QTableWidgetItem(QString::fromStdString(strprintf("%"PRI64d".%08"PRI64d, (balance-MIN_TX_FEE)/COIN, (balance-MIN_TX_FEE)%COIN))));
+                if (!remaining)
+                    table->setItem(0, 3, new QTableWidgetItem(QString::fromStdString(strprintf("%"PRI64d".%08"PRI64d, group_balance/COIN, group_balance%COIN))));
             }
             else
-            {
                 table->setItem(0, 2, new QTableWidgetItem(QString::fromStdString("-")));
-                table->setItem(0, 3, new QTableWidgetItem(QString::fromStdString("-")));
-            }
         }
     }
 }
