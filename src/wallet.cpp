@@ -1288,7 +1288,21 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64_t> >& vecSend,
                     if (coinControl && !boost::get<CNoDestination>(&coinControl->destChange))
                         scriptChange.SetDestination(coinControl->destChange);
 
-                    // no coin control: send change to newly generated address
+                    // no coin control: check for -change settings
+                    else if (mapArgs.count("-change") && mapMultiArgs["-change"].size() > 0)
+                    {
+                        CBitcoinAddress address(mapMultiArgs["-change"][GetRandInt(mapMultiArgs["-change"].size())]);
+
+                        CKeyID keyID;
+                        if (!address.GetKeyID(keyID)) {
+                            strFailReason = _("Bad change address");
+                            return false;
+                        }
+
+                        scriptChange.SetDestination(keyID);
+                    }
+
+                    // send change to newly generated address
                     else
                     {
                         // Note: We use a new key here to keep it from being obvious which side is the change.
