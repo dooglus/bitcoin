@@ -89,7 +89,7 @@ isminetype IsMine(const CKeyStore &keystore, const CScript& scriptPubKey)
     if (keystore.HaveWatchOnly(scriptPubKey)) {
         // TODO: This could be optimized some by doing some work after the above solver
         CScript scriptSig;
-        return ProduceSignature(DummySignatureCreator(&keystore), scriptPubKey, scriptSig) ? ISMINE_WATCH_SOLVABLE : ISMINE_WATCH_UNSOLVABLE;
+        return ProduceSignature(DummySignatureCreator(&keystore), scriptPubKey, scriptSig, false) ? ISMINE_WATCH_SOLVABLE : ISMINE_WATCH_UNSOLVABLE;
     }
     return ISMINE_NO;
 }
