@@ -8,6 +8,7 @@
 #include "chain.h"
 #include "chainparams.h"
 #include "checkpoints.h"
+#include <clientversion.h>
 #include "coins.h"
 #include "consensus/validation.h"
 #include "validation.h"
@@ -192,21 +193,21 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
     return result;
 }
 
-UniValue dumpbootstrap(const UniValue& params, bool fHelp)
+UniValue dumpbootstrap(const JSONRPCRequest& request)
 {
-    if (fHelp || params.size() < 2 || params.size() > 3)
+    if (request.fHelp || request.params.size() < 2 || request.params.size() > 3)
         throw runtime_error(
             "dumpbootstrap <destination> <endblock> [startblock=0]\n"
             "Creates a bootstrap format block dump of the blockchain in destination, which can be a directory or a path with filename, up to the given endblock number.\n"
             "Optional <startblock> is the first block number to dump.");
 
-    string strDest = params[0].get_str();
-    int nEndBlock = params[1].get_int();
+    string strDest = request.params[0].get_str();
+    int nEndBlock = request.params[1].get_int();
     if (nEndBlock < 0 || nEndBlock > pindexBestHeader->nHeight)
         throw runtime_error("End block number out of range.");
     int nStartBlock = 0;
-    if (params.size() > 2)
-        nStartBlock = params[2].get_int();
+    if (request.params.size() > 2)
+        nStartBlock = request.params[2].get_int();
     if (nStartBlock < 0 || nStartBlock > nEndBlock)
         throw runtime_error("Start block number out of range.");
 
@@ -1600,6 +1601,7 @@ static const CRPCCommand commands[] =
     { "blockchain",         "gettxoutsetinfo",        &gettxoutsetinfo,        true,  {} },
     { "blockchain",         "pruneblockchain",        &pruneblockchain,        true,  {"height"} },
     { "blockchain",         "verifychain",            &verifychain,            true,  {"checklevel","nblocks"} },
+    { "blockchain",         "dumpbootstrap",          &dumpbootstrap,          true,  {"destination", "endblock", "startblock"} },
 
     { "blockchain",         "preciousblock",          &preciousblock,          true,  {"blockhash"} },
 
