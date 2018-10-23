@@ -1152,7 +1152,7 @@ bool GetTransaction(const uint256 &hash, CTransactionRef &txOut, const Consensus
             CAutoFile file(OpenBlockFile(postx, true), SER_DISK, CLIENT_VERSION);
             if (file.IsNull())
                 return error("%s: OpenBlockFile failed", __func__);
-            CBlockHeader header;
+            CBlockLegacyHeader header;
             try {
                 file >> header;
                 fseek(file.Get(), postx.nTxOffset, SEEK_CUR);

@@ -10,6 +10,7 @@
 #include "clamour.h"
 #include "primitives/block.h"
 #include "pow.h"
+#include "timedata.h"
 #include "tinyformat.h"
 #include "uint256.h"
 
@@ -461,6 +462,9 @@ int64_t GetBlockProofEquivalentTime(const CBlockIndex& to, const CBlockIndex& fr
 /** Used to marshal pointers into hashes for db storage. */
 class CDiskBlockIndex : public CBlockIndex
 {
+private:
+    uint256 blockHash;
+
 public:
     uint256 hashPrev;
     uint256 hashNext;
@@ -468,6 +472,7 @@ public:
     CDiskBlockIndex() {
         hashPrev = uint256();
         hashNext = uint256();
+        blockHash = uint256();
     }
 
     explicit CDiskBlockIndex(const CBlockIndex* pindex) : CBlockIndex(*pindex) {
@@ -511,13 +516,14 @@ public:
         READWRITE(nTime);
         READWRITE(nBits);
         READWRITE(nNonce);
-        
-
-        
+        READWRITE(blockHash);
     }
 
     uint256 GetBlockHash() const
     {
+        if (nTime < GetAdjustedTime() - 24 * 60 * 60 && !blockHash.IsNull())
+            return blockHash;
+
         CBlockHeader block;
         block.nVersion        = nVersion;
         block.hashPrevBlock   = hashPrev;
@@ -525,7 +531,8 @@ public:
         block.nTime           = nTime;
         block.nBits           = nBits;
         block.nNonce          = nNonce;
-        return block.GetHash();
+
+        return const_cast<CDiskBlockIndex*>(this)->blockHash = block.GetHash();
     }
 
 
