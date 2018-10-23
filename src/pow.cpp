@@ -41,7 +41,7 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const Consensus:
     
     if (pindexLast->nHeight < params.DISTRIBUTION_END && Params().NetworkIDString() == "main")
         return GetNextTargetRequiredV1(pindexLast, params, fProofOfStake);
-    else if (pindexLast->nHeight <= params.nProtocolV2Height)
+    else if (pindexLast->nHeight <= params.nProtocolV2Height && Params().NetworkIDString() == "main")
         return GetNextTargetRequiredV2(pindexLast, params, fProofOfStake);
     else    
         return GetNextTargetRequiredV3(pindexLast, params, fProofOfStake);

@@ -10,6 +10,7 @@
 #include "clamour.h"
 #include "primitives/block.h"
 #include "pow.h"
+#include "timedata.h"
 #include "tinyformat.h"
 #include "uint256.h"
 
@@ -458,9 +459,12 @@ arith_uint256 GetBlockProof(const CBlockIndex& block);
 /** Return the time it would take to redo the work difference between from and to, assuming the current hashrate corresponds to the difficulty at tip, in seconds. */
 int64_t GetBlockProofEquivalentTime(const CBlockIndex& to, const CBlockIndex& from, const CBlockIndex& tip, const Consensus::Params&);
 
+
 /** Used to marshal pointers into hashes for db storage. */
 class CDiskBlockIndex : public CBlockIndex
 {
+private: 
+    uint256 blockHash;
 public:
     uint256 hashPrev;
     uint256 hashNext;
@@ -511,13 +515,16 @@ public:
         READWRITE(nTime);
         READWRITE(nBits);
         READWRITE(nNonce);
-        
+        READWRITE(blockHash);
 
         
     }
 
     uint256 GetBlockHash() const
     {
+        if (!blockHash.IsNull())
+            return blockHash;
+
         CBlockHeader block;
         block.nVersion        = nVersion;
         block.hashPrevBlock   = hashPrev;
@@ -525,7 +532,10 @@ public:
         block.nTime           = nTime;
         block.nBits           = nBits;
         block.nNonce          = nNonce;
-        return block.GetHash();
+
+        const_cast<CDiskBlockIndex*>(this)->blockHash = block.GetHash();
+
+        return blockHash;
     }
 
 

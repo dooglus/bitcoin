@@ -12,15 +12,55 @@
 #include "crypto/scrypt.h"
 #include "util.h"
 
-uint256 CBlockHeader::GetHash() const
+uint256 CBlockLegacyHeader::GetHash() const
 {
+    time_t start_time, end_time;
+    uint256 ret;
+
+    time(&start_time);
+
     if (nVersion > 6 ) { //&& !IsProofOfWork()) {
         //LogPrint("xp", "> 6 %s %d %d\n", Hash(BEGIN(nVersion), END(nNonce)).ToString(), nVersion, nNonce);
-        return Hash(BEGIN(nVersion), END(nNonce));
+        ret = Hash(BEGIN(nVersion), END(nNonce));
     } else {
         //LogPrint("xp", "< 6 %s %d\n", GetPoWHash().ToString(), nVersion);
-        return GetPoWHash();  
+        ret = GetPoWHash();  
     }
+
+    time(&end_time);
+
+    // LogPrintf("version %d hash %s took %d\n", nVersion, ret.ToString(), end_time - start_time);
+
+    return ret;
+}
+
+uint256 CBlockLegacyHeader::GetPoWHash() const
+{
+    uint256 thash;
+    scrypt_1024_1_1_256(BEGIN(nVersion), BEGIN(thash));
+    return thash;
+}
+
+uint256 CBlockHeader::GetHash() const
+{
+    time_t start_time, end_time;
+    uint256 ret;
+
+    time(&start_time);
+
+    if (nVersion > 6 ) { //&& !IsProofOfWork()) {
+        //LogPrint("xp", "> 6 %s %d %d\n", Hash(BEGIN(nVersion), END(nNonce)).ToString(), nVersion, nNonce);
+        ret = Hash(BEGIN(nVersion), END(nNonce));
+    } else {
+        //LogPrint("xp", "< 6 %s %d\n", GetPoWHash().ToString(), nVersion);
+        ret = GetPoWHash();  
+    }
+
+    time(&end_time);
+
+    // LogPrintf("version %d hash %s took %d\n", nVersion, ret.ToString(), end_time - start_time);
+
+    return ret;
 }
 
 uint256 CBlockHeader::GetPoWHash() const
@@ -28,11 +68,6 @@ uint256 CBlockHeader::GetPoWHash() const
     uint256 thash;
     scrypt_1024_1_1_256(BEGIN(nVersion), BEGIN(thash));
     return thash;
-}
-
-uint256 CBlockHeader::GetHashWithoutSign() const
-{
-    return SerializeHash(*this, SER_GETHASH | SER_WITHOUT_SIGNATURE);
 }
 
 std::string CBlockHeader::ToString() const

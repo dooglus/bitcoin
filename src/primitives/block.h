@@ -17,7 +17,7 @@ static const int SER_WITHOUT_SIGNATURE = 1 << 3;
 
 class CBlock;
 
-class CBlockLegacy
+class CBlockLegacyHeader
 {
 public:
     // header
@@ -29,6 +29,46 @@ public:
     unsigned int nBits;
     unsigned int nNonce;
 
+    
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action) {
+        READWRITE(this->nVersion);
+        READWRITE(hashPrevBlock);
+        READWRITE(hashMerkleRoot);
+        READWRITE(nTime);
+        READWRITE(nBits);
+        READWRITE(nNonce);
+    }
+
+    void SetNull()
+    {
+        nVersion = 0;
+        hashPrevBlock.SetNull();
+        hashMerkleRoot.SetNull();
+        nTime = 0;
+        nBits = 0;
+        nNonce = 0;
+        
+    }
+
+    bool IsNull() const
+    {
+        return (nBits == 0);
+    }
+
+    uint256 GetHash() const;
+
+    uint256 GetPoWHash() const;
+};
+
+
+class CBlockLegacy : public CBlockLegacyHeader
+{
+public:
+    // network and disk
     std::vector<CTransactionRef> vtx;
     std::vector<unsigned char> vchBlockSig;
 
@@ -49,33 +89,16 @@ public:
 
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action) {
-        READWRITE(this->nVersion);
-        READWRITE(hashPrevBlock);
-        READWRITE(hashMerkleRoot);
-        READWRITE(nTime);
-        READWRITE(nBits);
-        READWRITE(nNonce);
-        if (!(s.GetType() & SER_WITHOUT_SIGNATURE)) {
-            READWRITE(vtx);
-            READWRITE(vchBlockSig);
-        }
+        READWRITE(*(CBlockLegacyHeader*)this);
+        READWRITE(vtx);
+        READWRITE(vchBlockSig);
     }
 
     void SetNull()
     {
-        nVersion = 0;
-        hashPrevBlock.SetNull();
-        hashMerkleRoot.SetNull();
-        nTime = 0;
-        nBits = 0;
-        nNonce = 0;
+        CBlockLegacyHeader::SetNull();
         vtx.clear();
         vchBlockSig.clear();
-    }
-
-    bool IsNull() const
-    {
-        return (nBits == 0);
     }
 
     bool IsProofOfStake() const
