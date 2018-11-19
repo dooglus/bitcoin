@@ -1460,7 +1460,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
     {
         std::vector<CAddress> vAddr;
         vRecv >> vAddr;
-        LogPrintf("%s:%d from peer %d (%s): got addr with %d addresses:\n", __FILE__, __LINE__, pfrom->id, pfrom->addr.ToString(), vAddr.size());
+        LogPrintf("%s:%d >ADDR: from peer %d (%s): got addr with %d addresses:\n", __FILE__, __LINE__, pfrom->id, pfrom->addr.ToString(), vAddr.size());
         BOOST_FOREACH(auto &x, vAddr) {
             LogPrintf("%s:%d %d (%s) addr: %s\n", __FILE__, __LINE__, pfrom->id, pfrom->addr.ToString(), x.ToString());
         }
@@ -2940,7 +2940,7 @@ bool SendMessages(CNode* pto, CConnman& connman, const std::atomic<bool>& interr
                     // receiver rejects addr messages larger than 1000
                     if (vAddr.size() >= 1000)
                     {
-                        LogPrintf("%s:%d sending batch of %d addresses\n", __FILE__, __LINE__, vAddr.size());
+                        LogPrintf("%s:%d ADDR>: sending batch of %d addresses\n", __FILE__, __LINE__, vAddr.size());
                         BOOST_FOREACH(auto &x, vAddr) {
                             LogPrintf("%s:%d %s\n", __FILE__, __LINE__, x.ToString());
                         }
@@ -2951,7 +2951,7 @@ bool SendMessages(CNode* pto, CConnman& connman, const std::atomic<bool>& interr
             }
             pto->vAddrToSend.clear();
             if (!vAddr.empty()) {
-                LogPrintf("%s:%d sending final batch of %d addresses\n", __FILE__, __LINE__, vAddr.size());
+                LogPrintf("%s:%d ADDR>: sending final batch of %d addresses\n", __FILE__, __LINE__, vAddr.size());
                 BOOST_FOREACH(auto &x, vAddr) {
                     LogPrintf("%s:%d %s\n", __FILE__, __LINE__, x.ToString());
                 }
