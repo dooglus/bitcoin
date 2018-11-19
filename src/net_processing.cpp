@@ -1461,7 +1461,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         vRecv >> vAddr;
         LogPrintf("%s:%d from peer %d (%s): got addr with %d addresses:\n", __FILE__, __LINE__, pfrom->id, pfrom->addr.ToString(), vAddr.size());
         BOOST_FOREACH(auto &x, vAddr) {
-            LogPrintf("%s:%d %d (%s) addr: %s\n", pfrom->id, pfrom->addr.ToString(), __FILE__, __LINE__, x.ToString());
+            LogPrintf("%s:%d %d (%s) addr: %s\n", __FILE__, __LINE__, pfrom->id, pfrom->addr.ToString(), x.ToString());
         }
 
         // Don't want addr from older versions unless seeding
