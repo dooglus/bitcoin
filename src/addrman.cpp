@@ -472,16 +472,22 @@ void CAddrMan::GetAddr_(std::vector<CAddress>& vAddr)
     }
 
     for (unsigned int n = 0; n < vRandom.size(); n++) {
-        if (vAddr.size() >= nNodes)
+        if (vAddr.size() >= nNodes) {
+            LogPrintf("%s:%d skip %d because %d >= %d\n", __FILE__, __LINE__, n, vAddr.size(), nNodes);
             break;
+        }
 
         int nRndPos = RandomInt(vRandom.size() - n) + n;
         SwapRandom(n, nRndPos);
         assert(mapInfo.count(vRandom[n]) == 1);
 
         const CAddrInfo& ai = mapInfo[vRandom[n]];
-        if (!ai.IsTerrible())
+        if (!ai.IsTerrible()) {
+            LogPrintf("%s:%d pushing %d : %s\n", __FILE__, __LINE__, n, ai.ToString());
             vAddr.push_back(ai);
+        } else {
+            LogPrintf("%s:%d not pushing terrible %d : %s\n", __FILE__, __LINE__, n, ai.ToString());
+        }
     }
 }
 
