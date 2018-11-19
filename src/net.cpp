@@ -172,8 +172,10 @@ bool IsPeerAddrLocalGood(CNode *pnode)
 // pushes our own address to a peer
 void AdvertiseLocal(CNode *pnode)
 {
+    LogPrintf("%s:%d\n", __FILE__, __LINE__);
     if (fListen && pnode->fSuccessfullyConnected)
     {
+        LogPrintf("%s:%d\n", __FILE__, __LINE__);
         CAddress addrLocal = GetLocalAddress(&pnode->addr, pnode->GetLocalServices());
         // If discovery is enabled, sometimes give our peer the address it
         // tells us that it sees us as in case it has a better idea of our
@@ -181,15 +183,20 @@ void AdvertiseLocal(CNode *pnode)
         if (IsPeerAddrLocalGood(pnode) && (!addrLocal.IsRoutable() ||
              GetRand((GetnScore(addrLocal) > LOCAL_MANUAL) ? 8:2) == 0))
         {
+            LogPrintf("%s:%d\n", __FILE__, __LINE__);
             addrLocal.SetIP(pnode->GetAddrLocal());
         }
+        LogPrintf("%s:%d\n", __FILE__, __LINE__);
         if (addrLocal.IsRoutable())
         {
-            LogPrint("net", "AdvertiseLocal: advertising address %s\n", addrLocal.ToString());
+            LogPrintf("AdvertiseLocal: advertising address %s\n", addrLocal.ToString());
             FastRandomContext insecure_rand;
             pnode->PushAddress(addrLocal, insecure_rand);
-        }
+        } else
+            LogPrintf("AdvertiseLocal: NOT advertising non-routable address %s\n", addrLocal.ToString());
+        LogPrintf("%s:%d\n", __FILE__, __LINE__);
     }
+    LogPrintf("%s:%d\n", __FILE__, __LINE__);
 }
 
 // learn a new local address

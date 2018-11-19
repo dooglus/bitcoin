@@ -1050,6 +1050,7 @@ void static ProcessGetData(CNode* pfrom, const Consensus::CParams& consensusPara
                     // Send block from disk
                     CBlock block;
                    // LogPrint("xp", "send block from disk %s %s\n", block.ToString(), (*mi).second->ToString());
+                    LogPrintf("%s:%d calling ReadBlockFromDisk()\n", __FILE__, __LINE__);
                     if (!ReadBlockFromDisk(block, (*mi).second, consensusParams))
                         assert(!"cannot load block from disk");
                     if (inv.type == MSG_BLOCK){
@@ -1459,12 +1460,19 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
     {
         std::vector<CAddress> vAddr;
         vRecv >> vAddr;
+        LogPrintf("%s:%d got addr with %d addresses:\n", __FILE__, __LINE__, vAddr.size());
+        BOOST_FOREACH(auto &x, vAddr) {
+            LogPrintf("%s:%d addr: %s\n", __FILE__, __LINE__, x.ToString());
+        }
 
         // Don't want addr from older versions unless seeding
-        if (pfrom->nVersion < CADDR_TIME_VERSION && connman.GetAddressCount() > 1000)
+        if (pfrom->nVersion < CADDR_TIME_VERSION && connman.GetAddressCount() > 1000) {
+            LogPrintf("%s:%d Don't want addr from older versions unless seeding\n", __FILE__, __LINE__);
             return true;
+        }
         if (vAddr.size() > 1000)
         {
+            LogPrintf("%s:%d\n", __FILE__, __LINE__);
             LOCK(cs_main);
             Misbehaving(pfrom->GetId(), 20);
             return error("message addr size() = %u", vAddr.size());
@@ -1486,14 +1494,21 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 addr.nTime = nNow - 5 * 24 * 60 * 60;
             pfrom->AddAddressKnown(addr);
             bool fReachable = IsReachable(addr);
-            if (addr.nTime > nSince && !pfrom->fGetAddr && vAddr.size() <= 10 && addr.IsRoutable())
+            LogPrintf("%s:%d IsReachable(%s) = %d\n", __FILE__, __LINE__, addr.ToString(), fReachable);
+            LogPrintf("%s:%d %d %d %d %d\n", __FILE__, __LINE__, addr.nTime > nSince, !pfrom->fGetAddr, vAddr.size() <= 10, addr.IsRoutable());
+            if (addr.nTime > nSince && !pfrom->fGetAddr && vAddr.size() <= 10 && addr.IsRoutable()) // doog
             {
+                LogPrintf("%s:%d relay: %s\n", __FILE__, __LINE__, addr.ToString());
                 // Relay to a limited number of other nodes
                 RelayAddress(addr, fReachable, connman);
             }
             // Do not store addresses outside our network
-            if (fReachable)
+            if (fReachable) {
+                LogPrintf("%s:%d storing %s\n", __FILE__, __LINE__, addr.ToString());
                 vAddrOk.push_back(addr);
+            } else {
+                LogPrintf("%s:%d not storing %s\n", __FILE__, __LINE__, addr.ToString());
+            }
         }
         connman.AddNewAddresses(vAddrOk, pfrom->addr, 2 * 60 * 60);
         if (vAddr.size() < 1000)
@@ -1725,6 +1740,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         }
 
         CBlock block;
+        LogPrintf("%s:%d calling ReadBlockFromDisk()\n", __FILE__, __LINE__);
         bool ret = ReadBlockFromDisk(block, it->second, chainparams.GetConsensus());
         assert(ret);
 
@@ -2888,15 +2904,30 @@ bool SendMessages(CNode* pto, CConnman& connman, const std::atomic<bool>& interr
         // Address refresh broadcast
         int64_t nNow = GetTimeMicros();
         if (!IsInitialBlockDownload() && pto->nNextLocalAddrSend < nNow) {
+            LogPrintf("%s:%d advertising local\n", __FILE__, __LINE__);
             AdvertiseLocal(pto);
             pto->nNextLocalAddrSend = PoissonNextSend(nNow, AVG_LOCAL_ADDRESS_BROADCAST_INTERVAL);
+            LogPrintf("%s:%d node %d initialdownload = %d; now %.3f, next local addr send at %.3f in %.3f\n", __FILE__, __LINE__,
+                      pto->GetId(),
+                      IsInitialBlockDownload(),
+                      nNow / 1e6,
+                      pto->nNextLocalAddrSend / 1e6,
+                      (pto->nNextLocalAddrSend - nNow) / 1e6);
         }
 
         //
         // Message: addr
         //
         if (pto->nNextAddrSend < nNow) {
+            LogPrintf("%s:%d node %d sending %d addresses now\n", __FILE__, __LINE__,
+                      pto->GetId(),
+                      pto->vAddrToSend.size());
             pto->nNextAddrSend = PoissonNextSend(nNow, AVG_ADDRESS_BROADCAST_INTERVAL);
+            LogPrintf("%s:%d node %d now %.3f, next addr send at %.3f in %.3f\n", __FILE__, __LINE__,
+                      pto->GetId(),
+                      nNow / 1e6,
+                      pto->nNextAddrSend / 1e6,
+                      (pto->nNextAddrSend - nNow) / 1e6);
             std::vector<CAddress> vAddr;
             vAddr.reserve(pto->vAddrToSend.size());
             BOOST_FOREACH(const CAddress& addr, pto->vAddrToSend)
@@ -2908,14 +2939,23 @@ bool SendMessages(CNode* pto, CConnman& connman, const std::atomic<bool>& interr
                     // receiver rejects addr messages larger than 1000
                     if (vAddr.size() >= 1000)
                     {
+                        LogPrintf("%s:%d sending batch of %d addresses\n", __FILE__, __LINE__, vAddr.size());
+                        BOOST_FOREACH(auto &x, vAddr) {
+                            LogPrintf("%s:%d %s\n", __FILE__, __LINE__, x.ToString());
+                        }
                         connman.PushMessage(pto, msgMaker.Make(NetMsgType::ADDR, vAddr));
                         vAddr.clear();
                     }
                 }
             }
             pto->vAddrToSend.clear();
-            if (!vAddr.empty())
+            if (!vAddr.empty()) {
+                LogPrintf("%s:%d sending final batch of %d addresses\n", __FILE__, __LINE__, vAddr.size());
+                BOOST_FOREACH(auto &x, vAddr) {
+                    LogPrintf("%s:%d %s\n", __FILE__, __LINE__, x.ToString());
+                }
                 connman.PushMessage(pto, msgMaker.Make(NetMsgType::ADDR, vAddr));
+            }
             // we only send the big addr message once
             if (pto->vAddrToSend.capacity() > 40)
                 pto->vAddrToSend.shrink_to_fit();
@@ -3044,6 +3084,7 @@ bool SendMessages(CNode* pto, CConnman& connman, const std::atomic<bool>& interr
                     }
                     if (!fGotBlockFromCache) {
                         CBlock block;
+                        LogPrintf("%s:%d calling ReadBlockFromDisk()\n", __FILE__, __LINE__);
                         bool ret = ReadBlockFromDisk(block, pBestIndex, consensusParams);
                         assert(ret);
                         CBlockHeaderAndShortTxIDs cmpctblock(block, state.fWantsCmpctWitness);
