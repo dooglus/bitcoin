@@ -2498,8 +2498,11 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         pfrom->vAddrToSend.clear();
         std::vector<CAddress> vAddr = connman.GetAddresses();
         FastRandomContext insecure_rand;
-        BOOST_FOREACH(const CAddress &addr, vAddr)
+        LogPrintf("%s:%d got %d addresses from connman\n", __FILE__, __LINE__, vAddr.size());
+        BOOST_FOREACH(const CAddress &addr, vAddr) {
+            LogPrintf("%s:%d pushing %s\n", __FILE__, __LINE__, addr.ToString());
             pfrom->PushAddress(addr, insecure_rand);
+        }
     }
 
 

@@ -466,6 +466,11 @@ void CAddrMan::GetAddr_(std::vector<CAddress>& vAddr)
         nNodes = ADDRMAN_GETADDR_MAX;
 
     // gather a list of random nodes, skipping those of low quality
+    LogPrintf("%s:%d vRandom has %d nodes\n", __FILE__, __LINE__, vRandom.size());
+    for (unsigned int n = 0; n < vRandom.size(); n++) {
+        LogPrintf("%s:%d %d %s\n", __FILE__, __LINE__, n, mapInfo[vRandom[n]].ToString());
+    }
+
     for (unsigned int n = 0; n < vRandom.size(); n++) {
         if (vAddr.size() >= nNodes)
             break;
