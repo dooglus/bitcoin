@@ -1050,7 +1050,6 @@ void static ProcessGetData(CNode* pfrom, const Consensus::CParams& consensusPara
                     // Send block from disk
                     CBlock block;
                    // LogPrint("xp", "send block from disk %s %s\n", block.ToString(), (*mi).second->ToString());
-                    LogPrintf("%s:%d calling ReadBlockFromDisk()\n", __FILE__, __LINE__);
                     if (!ReadBlockFromDisk(block, (*mi).second, consensusParams))
                         assert(!"cannot load block from disk");
                     if (inv.type == MSG_BLOCK){
