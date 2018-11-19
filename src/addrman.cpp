@@ -462,6 +462,7 @@ int CAddrMan::Check_()
 void CAddrMan::GetAddr_(std::vector<CAddress>& vAddr)
 {
     unsigned int nNodes = ADDRMAN_GETADDR_MAX_PCT * vRandom.size() / 100;
+    LogPrintf("%s:%d ADDRMAN_GETADDR_MAX_PCT = %d, vRandom.size() = %d, so nNodes = %d\n", __FILE__, __LINE__, ADDRMAN_GETADDR_MAX_PCT, vRandom.size(), nNodes);
     if (nNodes > ADDRMAN_GETADDR_MAX)
         nNodes = ADDRMAN_GETADDR_MAX;
 
