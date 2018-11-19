@@ -202,14 +202,22 @@ void AdvertiseLocal(CNode *pnode)
 // learn a new local address
 bool AddLocal(const CService& addr, int nScore)
 {
-    if (!addr.IsRoutable())
-        return false;
+    LogPrintf("%s:%d AddLocal(%s,%i)\n", __FILE__, __LINE__, addr.ToString(), nScore);
 
-    if (!fDiscover && nScore < LOCAL_MANUAL)
+    if (!addr.IsRoutable()) {
+        LogPrintf("%s:%d %s is not routable\n", __FILE__, __LINE__, addr.ToString());
         return false;
+    }
 
-    if (IsLimited(addr))
+    if (!fDiscover && nScore < LOCAL_MANUAL) {
+        LogPrintf("%s:%d\n", __FILE__, __LINE__);
         return false;
+    }
+
+    if (IsLimited(addr)) {
+        LogPrintf("%s:%d\n", __FILE__, __LINE__);
+        return false;
+    }
 
     LogPrintf("AddLocal(%s,%i)\n", addr.ToString(), nScore);
 
