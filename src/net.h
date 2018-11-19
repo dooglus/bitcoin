@@ -766,6 +766,11 @@ public:
             } else {
                 vAddrToSend.push_back(_addr);
             }
+            LogPrintf("%s:%d pushing\n", __FILE__, __LINE__);
+        } else if (!_addr.IsValid()) {
+          LogPrintf("%s:%d not pushing because invalid\n", __FILE__, __LINE__);
+        } else if (addrKnown.contains(_addr.GetKey())) {
+          LogPrintf("%s:%d not pushing because known\n", __FILE__, __LINE__);
         }
     }
 

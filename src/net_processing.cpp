@@ -2934,6 +2934,7 @@ bool SendMessages(CNode* pto, CConnman& connman, const std::atomic<bool>& interr
                       (pto->nNextAddrSend - nNow) / 1e6);
             std::vector<CAddress> vAddr;
             vAddr.reserve(pto->vAddrToSend.size());
+            LogPrintf("%s:%d we have a total of %d addresses to send to %s\n", __FILE__, __LINE__, pto->vAddrToSend.size(), pto->addr.ToString());
             BOOST_FOREACH(const CAddress& addr, pto->vAddrToSend)
             {
                 if (!pto->addrKnown.contains(addr.GetKey()))
