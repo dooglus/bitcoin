@@ -241,8 +241,11 @@ void CAddrMan::Good_(const CService& addr, int64_t nTime)
 
 bool CAddrMan::Add_(const CAddress& addr, const CNetAddr& source, int64_t nTimePenalty)
 {
-    if (!addr.IsRoutable())
+    LogPrintf("%s:%d adding address %s\n", __FILE__, __LINE__, addr.ToString());
+    if (!addr.IsRoutable()) {
+        LogPrintf("%s:%d not routable\n", __FILE__, __LINE__);
         return false;
+    }
 
     bool fNew = false;
     int nId;
@@ -254,6 +257,7 @@ bool CAddrMan::Add_(const CAddress& addr, const CNetAddr& source, int64_t nTimeP
     }
 
     if (pinfo) {
+        LogPrintf("%s:%d found it already\n", __FILE__, __LINE__);
         // periodically update nTime
         bool fCurrentlyOnline = (GetAdjustedTime() - addr.nTime < 24 * 60 * 60);
         int64_t nUpdateInterval = (fCurrentlyOnline ? 60 * 60 : 24 * 60 * 60);
@@ -282,6 +286,8 @@ bool CAddrMan::Add_(const CAddress& addr, const CNetAddr& source, int64_t nTimeP
         if (nFactor > 1 && (RandomInt(nFactor) != 0))
             return false;
     } else {
+        LogPrintf("%s:%d didn't find it already\n", __FILE__, __LINE__);
+
         pinfo = Create(addr, source, &nId);
         pinfo->nTime = std::max((int64_t)0, (int64_t)pinfo->nTime - nTimePenalty);
         nNew++;
