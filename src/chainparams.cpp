@@ -128,7 +128,8 @@ public:
         assert(genesis.hashMerkleRoot == uint256S("0xef10b32afd53e4a6ebb8bdb0486c6acbe9b43afe3dfa538e913b89bb1319ff96"));
 
         // push peer seeders running this network crawler: https://github.com/dooglus/bitcoin-seeder/tree/clam
-        vSeeds.push_back(CDNSSeedData("clam.just-dice.com", "clam.just-dice.com", false)); // mainnet
+        vSeeds.push_back(CDNSSeedData("clam.just-dice.com"   , "clam.just-dice.com"   , false)); // mainnet
+        vSeeds.push_back(CDNSSeedData("clam.freebitcoins.com", "clam.freebitcoins.com", false)); // mainnet
 
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,137);
