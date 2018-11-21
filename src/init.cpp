@@ -1617,7 +1617,9 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
         nLocalServices = ServiceFlags(nLocalServices | NODE_WITNESS);
         // Only care about others providing witness capabilities if there is a softfork
         // defined.
-        nRelevantServices = ServiceFlags(nRelevantServices | NODE_WITNESS);
+        if (chainparams.GetConsensus().vDeployments[Consensus::DEPLOYMENT_SEGWIT].nStartTime != 0) {
+            nRelevantServices = ServiceFlags(nRelevantServices | NODE_WITNESS);
+        }
     }
 
     // ********************************************************* Step 10: import blocks
